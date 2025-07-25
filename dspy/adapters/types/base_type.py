@@ -68,7 +68,9 @@ class BaseType(pydantic.BaseModel):
         return formatted
 
 
-def split_message_content_for_custom_types(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def split_message_content_for_custom_types(
+    messages: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     """Split user message content into a list of content blocks.
 
     This method splits each user message's content in the `messages` list to be a list of content block, so that
@@ -94,6 +96,7 @@ def split_message_content_for_custom_types(messages: list[dict[str, Any]]) -> li
     Returns:
         A list of messages with the content split into a list of content blocks around custom types content.
     """
+
     for message in messages:
         if message["role"] != "user":
             # Custom type messages are only in user messages
@@ -115,9 +118,15 @@ def split_message_content_for_custom_types(messages: list[dict[str, Any]]) -> li
             # Parse the JSON inside the block
             custom_type_content = match.group(1).strip()
             try:
-                parsed = json_repair.loads(custom_type_content)
+                if "image_url" in message["content"]:
+                    assert custom_type_content.count("'"), "unexpected image format"
+                    custom_type_content = custom_type_content.replace("'", '"')
+                    parsed = json.loads(custom_type_content)
+                else:
+                    parsed = json_repair.loads(custom_type_content)
                 for custom_type_content in parsed:
                     result.append(custom_type_content)
+
             except json.JSONDecodeError:
                 # fallback to raw string if it's not valid JSON
                 parsed = {"type": "text", "text": custom_type_content}
