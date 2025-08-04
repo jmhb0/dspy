@@ -120,7 +120,8 @@ def split_message_content_for_custom_types(messages: list[dict[str, Any]]) -> li
             custom_type_content = match.group(1).strip()
             try:
                 try:
-                    parsed = json.loads(custom_type_content)
+                    unescaped_content = custom_type_content.replace('\\"', '"')
+                    parsed = json.loads(unescaped_content)
                 except json.JSONDecodeError:
                     parsed = json_repair.loads(custom_type_content)
                 for custom_type_content in parsed:
